@@ -27,6 +27,8 @@ const apiCall = async (method, url, data) => {
   // set token
   const token = localStorage.getItem('token');
 
+
+
   if (token) {
     myHeaders.append('Authorization', `Bearer ${token}`);
   }
@@ -81,7 +83,6 @@ function AuthProvider({ children }) {
           setCurrentUser(res.data.user);
         }
 
-        localStorage.setItem('token', res.token);
         localStorage.setItem('user', JSON.stringify(res.data.user));
       } catch (err) {
         console.log('Not authenticated or not an admin', err);
@@ -409,50 +410,198 @@ function UserManagement() {
 
 function CommunityManagement() {
   const [communities, setCommunities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newCommunity, setNewCommunity] = useState({
+    name: '',
+    description: '',
+  });
+  const [deleteConfirmation, setDeleteConfirmation] = useState({
+    show: false,
+    communityId: null,
+    communityName: '',
+  });
+  const [error, setError] = useState('');
+
+  const fetchCommunities = async () => {
+    try {
+      setLoading(true);
+      const res = await apiCall('GET', '/communities');
+      setCommunities(res.data.documents);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load communities');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchCommunities = async () => {
-      try {
-        const res = await apiCall('GET', '/communities');
-
-        setCommunities(res.data.documents);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
     fetchCommunities();
   }, []);
+
+  const handleCreateCommunity = async e => {
+    e.preventDefault();
+    try {
+      await apiCall('POST', '/communities', newCommunity);
+      setShowCreateModal(false);
+      setNewCommunity({ name: '', description: '' });
+      fetchCommunities();
+    } catch (err) {
+      console.error(err);
+      setError('Failed to create community');
+    }
+  };
+
+  const confirmDelete = (communityId, communityName) => {
+    setDeleteConfirmation({ show: true, communityId, communityName });
+  };
+
+  const handleDeleteCommunity = async () => {
+    try {
+      await apiCall('DELETE', `/communities/${deleteConfirmation.communityId}`);
+      setDeleteConfirmation({
+        show: false,
+        communityId: null,
+        communityName: '',
+      });
+      fetchCommunities();
+    } catch (err) {
+      console.error(err);
+      setError('Failed to delete community');
+    }
+  };
 
   return (
     <div className='community-management'>
       <h1>Community Management</h1>
 
-      <table className='data-table'>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Members</th>
-            <th>Created At</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {communities.map(community => (
-            <tr key={community._id}>
-              <td>{community.name}</td>
-              <td>{community.description}</td>
-              <td>{community.subscribers?.length || 0}</td>
-              <td>{new Date(community.createdAt).toLocaleDateString()}</td>
-              <td>
-                <button>Edit</button>
-                <button className='btn-danger'>Delete</button>
-              </td>
+      <div className='action-bar'>
+        <button
+          className='btn-primary'
+          onClick={() => setShowCreateModal(true)}
+        >
+          Create New Community
+        </button>
+      </div>
+
+      {error && <div className='alert alert-danger'>{error}</div>}
+
+      {loading ? (
+        <p>Loading communities...</p>
+      ) : (
+        <table className='data-table'>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Members</th>
+              <th>Created At</th>
+              <th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {communities.map(community => (
+              <tr key={community._id}>
+                <td>{community.name}</td>
+                <td>{community.description}</td>
+                <td>{community.subscribers?.length || 0}</td>
+                <td>{new Date(community.createdAt).toLocaleDateString()}</td>
+                <td>
+                  <button
+                    className='btn-danger'
+                    onClick={() => confirmDelete(community._id, community.name)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* Create Community Modal */}
+      {showCreateModal && (
+        <div className='modal-overlay'>
+          <div className='modal'>
+            <h2>Create New Community</h2>
+            <form onSubmit={handleCreateCommunity}>
+              <div className='form-group'>
+                <label htmlFor='name'>Community Name</label>
+                <input
+                  type='text'
+                  id='name'
+                  value={newCommunity.name}
+                  onChange={e =>
+                    setNewCommunity({ ...newCommunity, name: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className='form-group'>
+                <label htmlFor='description'>Description</label>
+                <textarea
+                  id='description'
+                  value={newCommunity.description}
+                  onChange={e =>
+                    setNewCommunity({
+                      ...newCommunity,
+                      description: e.target.value,
+                    })
+                  }
+                  rows='4'
+                  style={{ width: '100%' }}
+                  required
+                />
+              </div>
+              <div className='modal-actions'>
+                <button
+                  type='button'
+                  className='btn-secondary'
+                  onClick={() => setShowCreateModal(false)}
+                >
+                  Cancel
+                </button>
+                <button type='submit' className='btn-primary'>
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmation.show && (
+        <div className='modal-overlay'>
+          <div className='modal'>
+            <h2>Confirm Deletion</h2>
+            <p>
+              Are you sure you want to delete the community "
+              {deleteConfirmation.communityName}"?
+            </p>
+            <p className='warning'>This action cannot be undone!</p>
+            <div className='modal-actions'>
+              <button
+                className='btn-secondary'
+                onClick={() =>
+                  setDeleteConfirmation({
+                    show: false,
+                    communityId: null,
+                    communityName: '',
+                  })
+                }
+              >
+                Cancel
+              </button>
+              <button className='btn-danger' onClick={handleDeleteCommunity}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
