@@ -1,19 +1,19 @@
-import "./App.css";
-import React, { useState, useEffect } from "react";
+import './App.css';
+import React, { useState, useEffect } from 'react';
 import {
   BrowserRouter as Router,
   Route,
   Routes,
   Navigate,
   Link,
-} from "react-router-dom";
+} from 'react-router-dom';
 
 // Set axios defaults
-const baseURL = "https://a0e1-135-0-96-34.ngrok-free.app/api/v1";
+const baseURL = 'https://1573-135-0-96-34.ngrok-free.app/api/v1';
 
 const apiCall = async (method, url, data) => {
   const myHeaders = new Headers();
-  myHeaders.append("Content-Type", "application/json");
+  myHeaders.append('Content-Type', 'application/json');
 
   const raw = JSON.stringify(data);
 
@@ -21,14 +21,17 @@ const apiCall = async (method, url, data) => {
     method,
     headers: myHeaders,
     body: raw,
-    redirect: "follow",
+    redirect: 'follow',
   };
 
   // set token
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
+
   if (token) {
-    myHeaders.append("Authorization", `Bearer ${token}`);
+    myHeaders.append('Authorization', `Bearer ${token}`);
   }
+
+  myHeaders.append("ngrok-skip-browser-warning", "true");
 
   const res = await fetch(baseURL + url, requestOptions);
 
@@ -43,18 +46,18 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="admin-panel">
+        <div className='admin-panel'>
           <Routes>
-            <Route path="/login" element={<Login />} />
+            <Route path='/login' element={<Login />} />
             <Route
-              path="/admin/*"
+              path='/admin/*'
               element={
                 <ProtectedRoute>
                   <AdminLayout />
                 </ProtectedRoute>
               }
             />
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            <Route path='*' element={<Navigate to='/login' replace />} />
           </Routes>
         </div>
       </AuthProvider>
@@ -69,29 +72,21 @@ function AuthProvider({ children }) {
   useEffect(() => {
     const checkLoggedIn = async () => {
       try {
+        const user = JSON.parse(localStorage.getItem('user'));
 
-        const user = JSON.parse(localStorage.getItem("user"));
-
-
-
-        const res = await apiCall("GET", "/users/"+user._id);
+        const res = await apiCall('GET', '/users/' + user._id);
         // set token in local storage
 
-
-        if (res.data.user.role === "admin") {
+        if (res.data.user.role === 'admin') {
           setCurrentUser(res.data.user);
         }
 
-
-
-        localStorage.setItem("token", res.token);
-        localStorage.setItem("user",JSON.stringify(res.data.user))
-        console.log(5);
-        
+        localStorage.setItem('token', res.token);
+        localStorage.setItem('user', JSON.stringify(res.data.user));
       } catch (err) {
-        console.log("Not authenticated or not an admin", err);
+        console.log('Not authenticated or not an admin', err);
+        throw new Error('Not authenticated or not an admin');
       } finally {
-
         setLoading(false);
       }
     };
@@ -101,16 +96,16 @@ function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      const res = await apiCall("POST", "/users/signin", { email, password });
+      const res = await apiCall('POST', '/users/signin', { email, password });
 
-      if (res.data.user.role === "admin") {
+      if (res.data.user.role === 'admin') {
         setCurrentUser(res.data);
         // set token in local storage
-        localStorage.setItem("token", res.token);
-        localStorage.setItem("user",JSON.stringify(res.data.user))
+        localStorage.setItem('token', res.token);
+        localStorage.setItem('user', JSON.stringify(res.data.user));
         return true;
       } else {
-        throw new Error("Not authorized as admin");
+        throw new Error('Not authorized as admin');
       }
     } catch (err) {
       console.error(err);
@@ -120,9 +115,9 @@ function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      await apiCall("GET", "/users/logout");
+      localStorage.removeItem('token');
       setCurrentUser(null);
-      localStorage.removeItem("token");
+      await apiCall('GET', '/users/logout');
     } catch (err) {
       console.error(err);
     }
@@ -132,7 +127,7 @@ function AuthProvider({ children }) {
     currentUser,
     login,
     logout,
-    isAdmin: currentUser?.role === "admin",
+    isAdmin: currentUser?.role === 'admin',
   };
 
   return (
@@ -150,61 +145,62 @@ function ProtectedRoute({ children }) {
   const { currentUser, isAdmin } = useAuth();
 
   if (!currentUser || !isAdmin) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to='/login' replace />;
   }
 
   return children;
 }
 
 function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const auth = useAuth();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    setError("");
+    setError('');
 
     const success = await auth.login(email, password);
+
     if (success) {
-      window.location.href = "/admin";
+      window.location.href = '/admin';
     } else {
-      setError("Failed to sign in. Ensure you have admin privileges.");
+      setError('Failed to sign in. Ensure you have admin privileges.');
     }
   };
 
   if (auth.currentUser) {
-    return <Navigate to="/admin" replace />;
+    return <Navigate to='/admin' replace />;
   }
 
   return (
-    <div className="login-container">
-      <div className="login-card">
+    <div className='login-container'>
+      <div className='login-card'>
         <h2>Noddit Admin Panel</h2>
-        {error && <div className="alert alert-danger">{error}</div>}
+        {error && <div className='alert alert-danger'>{error}</div>}
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
+          <div className='form-group'>
+            <label htmlFor='email'>Email</label>
             <input
-              type="email"
-              id="email"
+              type='email'
+              id='email'
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               required
             />
           </div>
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
+          <div className='form-group'>
+            <label htmlFor='password'>Password</label>
             <input
-              type="password"
-              id="password"
+              type='password'
+              id='password'
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
               required
             />
           </div>
-          <button type="submit" className="btn-primary">
+          <button type='submit' className='btn-primary'>
             Sign In
           </button>
         </form>
@@ -217,62 +213,59 @@ function AdminLayout() {
   const auth = useAuth();
 
   return (
-    <div className="admin-layout">
-      <nav className="sidebar">
-        <div className="sidebar-header">
+    <div className='admin-layout'>
+      <nav className='sidebar'>
+        <div className='sidebar-header'>
           <h3>Noddit Admin</h3>
         </div>
-        <div className="user-info">
-          <div className="avatar">
+        <div className='user-info'>
+          <div className='avatar'>
             {auth.currentUser?.username?.charAt(0).toUpperCase()}
           </div>
           <span>{auth.currentUser?.username}</span>
         </div>
-        <ul className="sidebar-menu">
+        <ul className='sidebar-menu'>
           <li>
-            <Link to="/admin">Dashboard</Link>
+            <Link to='/admin'>Dashboard</Link>
           </li>
           <li>
-            <Link to="/admin/users">Users</Link>
+            <Link to='/admin/users'>Users</Link>
           </li>
           <li>
-            <Link to="/admin/communities">Communities</Link>
+            <Link to='/admin/communities'>Communities</Link>
           </li>
           <li>
-            <Link to="/admin/posts">Posts</Link>
+            <Link to='/admin/posts'>Posts</Link>
           </li>
           <li>
-            <Link to="/admin/comments">Comments</Link>
+            <Link to='/admin/comments'>Comments</Link>
           </li>
-          <li>
-            <Link to="/admin/settings">Settings</Link>
-          </li>
+
         </ul>
-        <div className="sidebar-footer">
-          <button onClick={auth.logout} className="btn-logout">
+        <div className='sidebar-footer'>
+          <button onClick={auth.logout} className='btn-logout'>
             Logout
           </button>
         </div>
       </nav>
 
-      <main className="content">
-        <div className="top-bar">
-          <div className="search-bar">
-            <input type="text" placeholder="Search..." />
+      <main className='content'>
+        <div className='top-bar'>
+          <div className='search-bar'>
+            <input type='text' placeholder='Search...' />
           </div>
-          <div className="user-actions">
+          <div className='user-actions'>
             <span>Welcome, {auth.currentUser?.username}</span>
           </div>
         </div>
 
-        <div className="content-body">
+        <div className='content-body'>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/users" element={<UserManagement />} />
-            <Route path="/communities" element={<CommunityManagement />} />
-            <Route path="/posts" element={<PostManagement />} />
-            <Route path="/comments" element={<CommentManagement />} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path='/' element={<Dashboard />} />
+            <Route path='/users' element={<UserManagement />} />
+            <Route path='/communities' element={<CommunityManagement />} />
+            <Route path='/posts' element={<PostManagement />} />
+            <Route path='/comments' element={<CommentManagement />} />
           </Routes>
         </div>
       </main>
@@ -294,10 +287,10 @@ function Dashboard() {
       try {
         // These endpoints would need to be implemented on the backend
         const [users, communities, posts, comments] = await Promise.all([
-          apiCall("GET", "/admin/stats/users"),
-          apiCall("GET", "/admin/stats/communities"),
-          apiCall("GET", "/admin/stats/posts"),
-          apiCall("GET", "/admin/stats/comments"),
+          apiCall('GET', '/admin/stats/users'),
+          apiCall('GET', '/admin/stats/communities'),
+          apiCall('GET', '/admin/stats/posts'),
+          apiCall('GET', '/admin/stats/comments'),
         ]);
 
         setStats({
@@ -322,31 +315,31 @@ function Dashboard() {
   }, []);
 
   return (
-    <div className="dashboard">
+    <div className='dashboard'>
       <h1>Dashboard</h1>
 
-      <div className="stats-grid">
-        <div className="stat-card">
+      <div className='stats-grid'>
+        <div className='stat-card'>
           <h3>Users</h3>
-          <div className="stat-value">{stats.userCount}</div>
+          <div className='stat-value'>{stats.userCount}</div>
         </div>
-        <div className="stat-card">
+        <div className='stat-card'>
           <h3>Communities</h3>
-          <div className="stat-value">{stats.communityCount}</div>
+          <div className='stat-value'>{stats.communityCount}</div>
         </div>
-        <div className="stat-card">
+        <div className='stat-card'>
           <h3>Posts</h3>
-          <div className="stat-value">{stats.postCount}</div>
+          <div className='stat-value'>{stats.postCount}</div>
         </div>
-        <div className="stat-card">
+        <div className='stat-card'>
           <h3>Comments</h3>
-          <div className="stat-value">{stats.commentCount}</div>
+          <div className='stat-value'>{stats.commentCount}</div>
         </div>
       </div>
 
-      <div className="recent-activity">
+      <div className='recent-activity'>
         <h2>Recent Activity</h2>
-        <div className="activity-list">
+        <div className='activity-list'>
           <p>
             Coming soon: Activity feed showing recent posts, comments, and user
             registrations
@@ -364,7 +357,7 @@ function UserManagement() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await apiCall("GET", "/admin/users");
+        const res = await apiCall('GET', '/admin/users');
         setUsers(res.data.users);
       } catch (err) {
         console.error(err);
@@ -378,14 +371,14 @@ function UserManagement() {
 
   const handleToggleAdmin = async (userId, isAdmin) => {
     try {
-      await apiCall("PATCH", `/admin/users/${userId}`, {
-        role: isAdmin ? "user" : "admin",
+      await apiCall('PATCH', `/admin/users/${userId}`, {
+        role: isAdmin ? 'user' : 'admin',
       });
 
       setUsers(
-        users.map((user) =>
+        users.map(user =>
           user._id === userId
-            ? { ...user, role: isAdmin ? "user" : "admin" }
+            ? { ...user, role: isAdmin ? 'user' : 'admin' }
             : user
         )
       );
@@ -395,13 +388,13 @@ function UserManagement() {
   };
 
   return (
-    <div className="user-management">
+    <div className='user-management'>
       <h1>User Management</h1>
 
       {loading ? (
         <p>Loading users...</p>
       ) : (
-        <table className="data-table">
+        <table className='data-table'>
           <thead>
             <tr>
               <th>Username</th>
@@ -413,7 +406,7 @@ function UserManagement() {
             </tr>
           </thead>
           <tbody>
-            {users.map((user) => (
+            {users.map(user => (
               <tr key={user._id}>
                 <td>{user.username}</td>
                 <td>{user.email}</td>
@@ -423,10 +416,10 @@ function UserManagement() {
                 <td>
                   <button
                     onClick={() =>
-                      handleToggleAdmin(user._id, user.role === "admin")
+                      handleToggleAdmin(user._id, user.role === 'admin')
                     }
                   >
-                    {user.role === "admin" ? "Remove Admin" : "Make Admin"}
+                    {user.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
                   </button>
                 </td>
               </tr>
@@ -444,7 +437,7 @@ function CommunityManagement() {
   useEffect(() => {
     const fetchCommunities = async () => {
       try {
-        const res = await apiCall("GET", "/admin/communities");
+        const res = await apiCall('GET', '/admin/communities');
 
         setCommunities(res.data.communities);
       } catch (err) {
@@ -456,10 +449,10 @@ function CommunityManagement() {
   }, []);
 
   return (
-    <div className="community-management">
+    <div className='community-management'>
       <h1>Community Management</h1>
 
-      <table className="data-table">
+      <table className='data-table'>
         <thead>
           <tr>
             <th>Name</th>
@@ -470,7 +463,7 @@ function CommunityManagement() {
           </tr>
         </thead>
         <tbody>
-          {communities.map((community) => (
+          {communities.map(community => (
             <tr key={community._id}>
               <td>{community.name}</td>
               <td>{community.description}</td>
@@ -478,7 +471,7 @@ function CommunityManagement() {
               <td>{new Date(community.createdAt).toLocaleDateString()}</td>
               <td>
                 <button>Edit</button>
-                <button className="btn-danger">Delete</button>
+                <button className='btn-danger'>Delete</button>
               </td>
             </tr>
           ))}
@@ -490,7 +483,7 @@ function CommunityManagement() {
 
 function PostManagement() {
   return (
-    <div className="post-management">
+    <div className='post-management'>
       <h1>Post Management</h1>
       <p>Implement post moderation capabilities here</p>
     </div>
@@ -499,20 +492,13 @@ function PostManagement() {
 
 function CommentManagement() {
   return (
-    <div className="comment-management">
+    <div className='comment-management'>
       <h1>Comment Management</h1>
       <p>Implement comment moderation capabilities here</p>
     </div>
   );
 }
 
-function Settings() {
-  return (
-    <div className="settings">
-      <h1>Admin Settings</h1>
-      <p>Configure admin panel settings here</p>
-    </div>
-  );
-}
+
 
 export default App;
