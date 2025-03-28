@@ -282,26 +282,25 @@ function Dashboard() {
   });
 
   useEffect(() => {
-    // In a real implementation, you would fetch actual stats from your API
     const fetchStats = async () => {
       try {
-        // These endpoints would need to be implemented on the backend
+        // Using standard endpoints instead of stats endpoints
         const [users, communities, posts, comments] = await Promise.all([
-          apiCall('GET', '/admin/stats/users'),
-          apiCall('GET', '/admin/stats/communities'),
-          apiCall('GET', '/admin/stats/posts'),
-          apiCall('GET', '/admin/stats/comments'),
+          apiCall('GET', '/users'),
+          apiCall('GET', '/communities'),
+          apiCall('GET', '/posts'),
+          apiCall('GET', '/comments'),
         ]);
 
         setStats({
-          userCount: users.data.count,
-          communityCount: communities.data.count,
-          postCount: posts.data.count,
-          commentCount: comments.data.count,
+          userCount: users.results || 0,
+          communityCount: communities.results || 0,
+          postCount: posts.results || 0,
+          commentCount: comments.results || 0,
         });
       } catch (err) {
-        console.error(err);
-        // For demo, set mock data
+        console.error('Error fetching stats:', err);
+        // Fallback to mock data
         setStats({
           userCount: 1245,
           communityCount: 86,
@@ -312,7 +311,9 @@ function Dashboard() {
     };
 
     fetchStats();
-  }, []);
+  }
+  , []);
+
 
   return (
     <div className='dashboard'>
@@ -357,8 +358,9 @@ function UserManagement() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await apiCall('GET', '/admin/users');
-        setUsers(res.data.users);
+        const res = await apiCall('GET', '/users');
+
+        setUsers(res.data.documents);
       } catch (err) {
         console.error(err);
       } finally {
@@ -369,23 +371,6 @@ function UserManagement() {
     fetchUsers();
   }, []);
 
-  const handleToggleAdmin = async (userId, isAdmin) => {
-    try {
-      await apiCall('PATCH', `/admin/users/${userId}`, {
-        role: isAdmin ? 'user' : 'admin',
-      });
-
-      setUsers(
-        users.map(user =>
-          user._id === userId
-            ? { ...user, role: isAdmin ? 'user' : 'admin' }
-            : user
-        )
-      );
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   return (
     <div className='user-management'>
@@ -402,7 +387,6 @@ function UserManagement() {
               <th>Role</th>
               <th>Karma</th>
               <th>Created At</th>
-              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -413,15 +397,7 @@ function UserManagement() {
                 <td>{user.role}</td>
                 <td>{user.karma}</td>
                 <td>{new Date(user.createdAt).toLocaleDateString()}</td>
-                <td>
-                  <button
-                    onClick={() =>
-                      handleToggleAdmin(user._id, user.role === 'admin')
-                    }
-                  >
-                    {user.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
-                  </button>
-                </td>
+
               </tr>
             ))}
           </tbody>
@@ -437,9 +413,9 @@ function CommunityManagement() {
   useEffect(() => {
     const fetchCommunities = async () => {
       try {
-        const res = await apiCall('GET', '/admin/communities');
+        const res = await apiCall('GET', '/communities');
 
-        setCommunities(res.data.communities);
+        setCommunities(res.data.documents);
       } catch (err) {
         console.error(err);
       }
