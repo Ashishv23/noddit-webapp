@@ -35,9 +35,11 @@ const apiCall = async (method, url, data) => {
 
   myHeaders.append("ngrok-skip-browser-warning", "true");
 
-  const res = await fetch(baseURL + url, requestOptions);
+  const res = await fetch(baseURL + url, requestOptions)
 
-  const result = await res.json();
+  const result = await res?.json().catch(err => {
+    return {}
+  });
   return result;
 };
 
@@ -253,7 +255,6 @@ function AdminLayout() {
       <main className='content'>
         <div className='top-bar'>
           <div className='search-bar'>
-            <input type='text' placeholder='Search...' />
           </div>
           <div className='user-actions'>
             <span>Welcome, {auth.currentUser?.username}</span>
@@ -607,19 +608,269 @@ function CommunityManagement() {
 }
 
 function PostManagement() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = useState({
+    show: false,
+    postId: null,
+    postTitle: '',
+  });
+
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      const res = await apiCall('GET', '/posts');
+      setPosts(res.data.documents);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load posts');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const confirmDelete = (postId, postTitle) => {
+    setDeleteConfirmation({ show: true, postId, postTitle });
+  };
+
+  const handleDeletePost = async () => {
+    try {
+      await apiCall('DELETE', `/posts/${deleteConfirmation.postId}`);
+      setDeleteConfirmation({
+        show: false,
+        postId: null,
+        postTitle: '',
+      });
+      fetchPosts();
+    } catch (err) {
+      console.error(err);
+      setError('Failed to delete post');
+    }
+  };
+
   return (
     <div className='post-management'>
       <h1>Post Management</h1>
-      <p>Implement post moderation capabilities here</p>
+
+      {error && <div className='alert alert-danger'>{error}</div>}
+
+      {loading ? (
+        <p>Loading posts...</p>
+      ) : (
+        <table className='data-table'>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Creator</th>
+              <th>Community</th>
+              <th>Votes</th>
+              <th>Created At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {posts.map(post => (
+              <tr key={post._id}>
+                <td>{post.title || 'N/A'}</td>
+                <td>{post.creator?.username || 'Anonymous'}</td>
+                <td>{post.community?.name || 'Unknown'}</td>
+                <td>
+                  {post.upvotes || 0} / {post.downvotes || 0}
+                </td>
+                <td>{new Date(post.createdAt).toLocaleDateString()}</td>
+                <td>
+                  <button
+                    className='btn-danger'
+                    onClick={() => confirmDelete(post._id, post.title)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmation.show && (
+        <div className='modal-overlay'>
+          <div className='modal'>
+            <h2>Confirm Deletion</h2>
+            <p>
+              Are you sure you want to delete the post "
+              {deleteConfirmation.postTitle}"?
+            </p>
+            <p className='warning'>This action cannot be undone!</p>
+            <div className='modal-actions'>
+              <button
+                className='btn-secondary'
+                onClick={() =>
+                  setDeleteConfirmation({
+                    show: false,
+                    postId: null,
+                    postTitle: '',
+                  })
+                }
+              >
+                Cancel
+              </button>
+              <button className='btn-danger' onClick={handleDeletePost}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function CommentManagement() {
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = useState({
+    show: false,
+    commentId: null,
+    commentContent: '',
+  });
+
+  const fetchComments = async () => {
+    try {
+      setLoading(true);
+      const res = await apiCall('GET', '/comments');
+      setComments(res.data.documents);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load comments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchComments();
+  }, []);
+
+  const confirmDelete = (commentId, commentContent) => {
+    // Truncate long comments for the confirmation modal
+    const truncatedContent =
+      commentContent.length > 50
+        ? `${commentContent.substring(0, 50)}...`
+        : commentContent;
+
+    setDeleteConfirmation({
+      show: true,
+      commentId,
+      commentContent: truncatedContent,
+    });
+  };
+
+  const handleDeleteComment = async () => {
+    try {
+      await apiCall('DELETE', `/comments/${deleteConfirmation.commentId}`);
+      setDeleteConfirmation({
+        show: false,
+        commentId: null,
+        commentContent: '',
+      });
+      fetchComments();
+    } catch (err) {
+      console.error(err);
+      setError('Failed to delete comment');
+    }
+  };
+
   return (
     <div className='comment-management'>
       <h1>Comment Management</h1>
-      <p>Implement comment moderation capabilities here</p>
+
+      {error && <div className='alert alert-danger'>{error}</div>}
+
+      {loading ? (
+        <p>Loading comments...</p>
+      ) : (
+        <table className='data-table'>
+          <thead>
+            <tr>
+              <th>Content</th>
+              <th>Creator</th>
+              <th>On Post</th>
+              <th>Community</th>
+              <th>Votes</th>
+              <th>Created At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {comments.map(comment => (
+              <tr key={comment._id}>
+                <td className='comment-content'>
+                  {comment.content.length > 100
+                    ? `${comment.content.substring(0, 100)}...`
+                    : comment.content}
+                </td>
+                <td>{comment.creator?.username || 'Anonymous'}</td>
+                <td>{comment.parent?.title || 'Unknown'}</td>
+                <td>
+                  {comment.community?.name ||
+                    comment.parent?.community?.name ||
+                    'Unknown'}
+                </td>
+                <td>
+                  {comment.upvotes || 0} / {comment.downvotes || 0}
+                </td>
+                <td>{new Date(comment.createdAt).toLocaleDateString()}</td>
+                <td>
+                  <button
+                    className='btn-danger'
+                    onClick={() => confirmDelete(comment._id, comment.content)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmation.show && (
+        <div className='modal-overlay'>
+          <div className='modal'>
+            <h2>Confirm Deletion</h2>
+            <p>
+              Are you sure you want to delete the comment "
+              {deleteConfirmation.commentContent}"?
+            </p>
+            <p className='warning'>This action cannot be undone!</p>
+            <div className='modal-actions'>
+              <button
+                className='btn-secondary'
+                onClick={() =>
+                  setDeleteConfirmation({
+                    show: false,
+                    commentId: null,
+                    commentContent: '',
+                  })
+                }
+              >
+                Cancel
+              </button>
+              <button className='btn-danger' onClick={handleDeleteComment}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
