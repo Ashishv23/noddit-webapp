@@ -9,7 +9,7 @@ import {
 } from "react-router-dom";
 
 // Set axios defaults
-const baseURL = "http://ec2-3-142-54-163.us-east-2.compute.amazonaws.com/";
+const baseURL = "http://ec2-3-142-54-163.us-east-2.compute.amazonaws.com";
 
 const apiCall = async (method, url, data) => {
   const myHeaders = new Headers();
