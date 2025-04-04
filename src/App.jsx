@@ -1,19 +1,19 @@
-import './App.css';
-import React, { useState, useEffect } from 'react';
+import "./App.css";
+import React, { useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Route,
   Routes,
   Navigate,
   Link,
-} from 'react-router-dom';
+} from "react-router-dom";
 
 // Set axios defaults
-const baseURL = 'https://1573-135-0-96-34.ngrok-free.app/api/v1';
+const baseURL = "http://ec2-3-142-54-163.us-east-2.compute.amazonaws.com/";
 
 const apiCall = async (method, url, data) => {
   const myHeaders = new Headers();
-  myHeaders.append('Content-Type', 'application/json');
+  myHeaders.append("Content-Type", "application/json");
 
   const raw = JSON.stringify(data);
 
@@ -21,24 +21,22 @@ const apiCall = async (method, url, data) => {
     method,
     headers: myHeaders,
     body: raw,
-    redirect: 'follow',
+    redirect: "follow",
   };
 
   // set token
-  const token = localStorage.getItem('token');
-
-
+  const token = localStorage.getItem("token");
 
   if (token) {
-    myHeaders.append('Authorization', `Bearer ${token}`);
+    myHeaders.append("Authorization", `Bearer ${token}`);
   }
 
   myHeaders.append("ngrok-skip-browser-warning", "true");
 
-  const res = await fetch(baseURL + url, requestOptions)
+  const res = await fetch(baseURL + url, requestOptions);
 
-  const result = await res?.json().catch(err => {
-    return {}
+  const result = await res?.json().catch((err) => {
+    return {};
   });
   return result;
 };
@@ -50,18 +48,18 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className='admin-panel'>
+        <div className="admin-panel">
           <Routes>
-            <Route path='/login' element={<Login />} />
+            <Route path="/login" element={<Login />} />
             <Route
-              path='/admin/*'
+              path="/admin/*"
               element={
                 <ProtectedRoute>
                   <AdminLayout />
                 </ProtectedRoute>
               }
             />
-            <Route path='*' element={<Navigate to='/login' replace />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </div>
       </AuthProvider>
@@ -76,19 +74,19 @@ function AuthProvider({ children }) {
   useEffect(() => {
     const checkLoggedIn = async () => {
       try {
-        const user = JSON.parse(localStorage.getItem('user'));
+        const user = JSON.parse(localStorage.getItem("user"));
 
-        const res = await apiCall('GET', '/users/' + user._id);
+        const res = await apiCall("GET", "/users/" + user._id);
         // set token in local storage
 
-        if (res.data.user.role === 'admin') {
+        if (res.data.user.role === "admin") {
           setCurrentUser(res.data.user);
         }
 
-        localStorage.setItem('user', JSON.stringify(res.data.user));
+        localStorage.setItem("user", JSON.stringify(res.data.user));
       } catch (err) {
-        console.log('Not authenticated or not an admin', err);
-        throw new Error('Not authenticated or not an admin');
+        console.log("Not authenticated or not an admin", err);
+        throw new Error("Not authenticated or not an admin");
       } finally {
         setLoading(false);
       }
@@ -99,16 +97,16 @@ function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      const res = await apiCall('POST', '/users/signin', { email, password });
+      const res = await apiCall("POST", "/users/signin", { email, password });
 
-      if (res.data.user.role === 'admin') {
+      if (res.data.user.role === "admin") {
         setCurrentUser(res.data);
         // set token in local storage
-        localStorage.setItem('token', res.token);
-        localStorage.setItem('user', JSON.stringify(res.data.user));
+        localStorage.setItem("token", res.token);
+        localStorage.setItem("user", JSON.stringify(res.data.user));
         return true;
       } else {
-        throw new Error('Not authorized as admin');
+        throw new Error("Not authorized as admin");
       }
     } catch (err) {
       console.error(err);
@@ -118,9 +116,9 @@ function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      localStorage.removeItem('token');
+      localStorage.removeItem("token");
       setCurrentUser(null);
-      await apiCall('GET', '/users/logout');
+      await apiCall("GET", "/users/logout");
     } catch (err) {
       console.error(err);
     }
@@ -130,7 +128,7 @@ function AuthProvider({ children }) {
     currentUser,
     login,
     logout,
-    isAdmin: currentUser?.role === 'admin',
+    isAdmin: currentUser?.role === "admin",
   };
 
   return (
@@ -148,62 +146,62 @@ function ProtectedRoute({ children }) {
   const { currentUser, isAdmin } = useAuth();
 
   if (!currentUser || !isAdmin) {
-    return <Navigate to='/login' replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return children;
 }
 
 function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const auth = useAuth();
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     const success = await auth.login(email, password);
 
     if (success) {
-      window.location.href = '/admin';
+      window.location.href = "/admin";
     } else {
-      setError('Failed to sign in. Ensure you have admin privileges.');
+      setError("Failed to sign in. Ensure you have admin privileges.");
     }
   };
 
   if (auth.currentUser) {
-    return <Navigate to='/admin' replace />;
+    return <Navigate to="/admin" replace />;
   }
 
   return (
-    <div className='login-container'>
-      <div className='login-card'>
+    <div className="login-container">
+      <div className="login-card">
         <h2>Noddit Admin Panel</h2>
-        {error && <div className='alert alert-danger'>{error}</div>}
+        {error && <div className="alert alert-danger">{error}</div>}
         <form onSubmit={handleSubmit}>
-          <div className='form-group'>
-            <label htmlFor='email'>Email</label>
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
             <input
-              type='email'
-              id='email'
+              type="email"
+              id="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
-          <div className='form-group'>
-            <label htmlFor='password'>Password</label>
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
             <input
-              type='password'
-              id='password'
+              type="password"
+              id="password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
-          <button type='submit' className='btn-primary'>
+          <button type="submit" className="btn-primary">
             Sign In
           </button>
         </form>
@@ -216,58 +214,56 @@ function AdminLayout() {
   const auth = useAuth();
 
   return (
-    <div className='admin-layout'>
-      <nav className='sidebar'>
-        <div className='sidebar-header'>
+    <div className="admin-layout">
+      <nav className="sidebar">
+        <div className="sidebar-header">
           <h3>Noddit Admin</h3>
         </div>
-        <div className='user-info'>
-          <div className='avatar'>
+        <div className="user-info">
+          <div className="avatar">
             {auth.currentUser?.username?.charAt(0).toUpperCase()}
           </div>
           <span>{auth.currentUser?.username}</span>
         </div>
-        <ul className='sidebar-menu'>
+        <ul className="sidebar-menu">
           <li>
-            <Link to='/admin'>Dashboard</Link>
+            <Link to="/admin">Dashboard</Link>
           </li>
           <li>
-            <Link to='/admin/users'>Users</Link>
+            <Link to="/admin/users">Users</Link>
           </li>
           <li>
-            <Link to='/admin/communities'>Communities</Link>
+            <Link to="/admin/communities">Communities</Link>
           </li>
           <li>
-            <Link to='/admin/posts'>Posts</Link>
+            <Link to="/admin/posts">Posts</Link>
           </li>
           <li>
-            <Link to='/admin/comments'>Comments</Link>
+            <Link to="/admin/comments">Comments</Link>
           </li>
-
         </ul>
-        <div className='sidebar-footer'>
-          <button onClick={auth.logout} className='btn-logout'>
+        <div className="sidebar-footer">
+          <button onClick={auth.logout} className="btn-logout">
             Logout
           </button>
         </div>
       </nav>
 
-      <main className='content'>
-        <div className='top-bar'>
-          <div className='search-bar'>
-          </div>
-          <div className='user-actions'>
+      <main className="content">
+        <div className="top-bar">
+          <div className="search-bar"></div>
+          <div className="user-actions">
             <span>Welcome, {auth.currentUser?.username}</span>
           </div>
         </div>
 
-        <div className='content-body'>
+        <div className="content-body">
           <Routes>
-            <Route path='/' element={<Dashboard />} />
-            <Route path='/users' element={<UserManagement />} />
-            <Route path='/communities' element={<CommunityManagement />} />
-            <Route path='/posts' element={<PostManagement />} />
-            <Route path='/comments' element={<CommentManagement />} />
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/users" element={<UserManagement />} />
+            <Route path="/communities" element={<CommunityManagement />} />
+            <Route path="/posts" element={<PostManagement />} />
+            <Route path="/comments" element={<CommentManagement />} />
           </Routes>
         </div>
       </main>
@@ -288,10 +284,10 @@ function Dashboard() {
       try {
         // Using standard endpoints instead of stats endpoints
         const [users, communities, posts, comments] = await Promise.all([
-          apiCall('GET', '/users'),
-          apiCall('GET', '/communities'),
-          apiCall('GET', '/posts'),
-          apiCall('GET', '/comments'),
+          apiCall("GET", "/users"),
+          apiCall("GET", "/communities"),
+          apiCall("GET", "/posts"),
+          apiCall("GET", "/comments"),
         ]);
 
         setStats({
@@ -301,7 +297,7 @@ function Dashboard() {
           commentCount: comments.results || 0,
         });
       } catch (err) {
-        console.error('Error fetching stats:', err);
+        console.error("Error fetching stats:", err);
         // Fallback to mock data
         setStats({
           userCount: 1245,
@@ -313,36 +309,34 @@ function Dashboard() {
     };
 
     fetchStats();
-  }
-  , []);
-
+  }, []);
 
   return (
-    <div className='dashboard'>
+    <div className="dashboard">
       <h1>Dashboard</h1>
 
-      <div className='stats-grid'>
-        <div className='stat-card'>
+      <div className="stats-grid">
+        <div className="stat-card">
           <h3>Users</h3>
-          <div className='stat-value'>{stats.userCount}</div>
+          <div className="stat-value">{stats.userCount}</div>
         </div>
-        <div className='stat-card'>
+        <div className="stat-card">
           <h3>Communities</h3>
-          <div className='stat-value'>{stats.communityCount}</div>
+          <div className="stat-value">{stats.communityCount}</div>
         </div>
-        <div className='stat-card'>
+        <div className="stat-card">
           <h3>Posts</h3>
-          <div className='stat-value'>{stats.postCount}</div>
+          <div className="stat-value">{stats.postCount}</div>
         </div>
-        <div className='stat-card'>
+        <div className="stat-card">
           <h3>Comments</h3>
-          <div className='stat-value'>{stats.commentCount}</div>
+          <div className="stat-value">{stats.commentCount}</div>
         </div>
       </div>
 
-      <div className='recent-activity'>
+      <div className="recent-activity">
         <h2>Recent Activity</h2>
-        <div className='activity-list'>
+        <div className="activity-list">
           <p>
             Coming soon: Activity feed showing recent posts, comments, and user
             registrations
@@ -360,7 +354,7 @@ function UserManagement() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await apiCall('GET', '/users');
+        const res = await apiCall("GET", "/users");
 
         setUsers(res.data.documents);
       } catch (err) {
@@ -373,15 +367,14 @@ function UserManagement() {
     fetchUsers();
   }, []);
 
-
   return (
-    <div className='user-management'>
+    <div className="user-management">
       <h1>User Management</h1>
 
       {loading ? (
         <p>Loading users...</p>
       ) : (
-        <table className='data-table'>
+        <table className="data-table">
           <thead>
             <tr>
               <th>Username</th>
@@ -392,14 +385,13 @@ function UserManagement() {
             </tr>
           </thead>
           <tbody>
-            {users.map(user => (
+            {users.map((user) => (
               <tr key={user._id}>
                 <td>{user.username}</td>
                 <td>{user.email}</td>
                 <td>{user.role}</td>
                 <td>{user.karma}</td>
                 <td>{new Date(user.createdAt).toLocaleDateString()}</td>
-
               </tr>
             ))}
           </tbody>
@@ -414,24 +406,24 @@ function CommunityManagement() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newCommunity, setNewCommunity] = useState({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
   });
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     show: false,
     communityId: null,
-    communityName: '',
+    communityName: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const fetchCommunities = async () => {
     try {
       setLoading(true);
-      const res = await apiCall('GET', '/communities');
+      const res = await apiCall("GET", "/communities");
       setCommunities(res.data.documents);
     } catch (err) {
       console.error(err);
-      setError('Failed to load communities');
+      setError("Failed to load communities");
     } finally {
       setLoading(false);
     }
@@ -441,16 +433,16 @@ function CommunityManagement() {
     fetchCommunities();
   }, []);
 
-  const handleCreateCommunity = async e => {
+  const handleCreateCommunity = async (e) => {
     e.preventDefault();
     try {
-      await apiCall('POST', '/communities', newCommunity);
+      await apiCall("POST", "/communities", newCommunity);
       setShowCreateModal(false);
-      setNewCommunity({ name: '', description: '' });
+      setNewCommunity({ name: "", description: "" });
       fetchCommunities();
     } catch (err) {
       console.error(err);
-      setError('Failed to create community');
+      setError("Failed to create community");
     }
   };
 
@@ -460,38 +452,38 @@ function CommunityManagement() {
 
   const handleDeleteCommunity = async () => {
     try {
-      await apiCall('DELETE', `/communities/${deleteConfirmation.communityId}`);
+      await apiCall("DELETE", `/communities/${deleteConfirmation.communityId}`);
       setDeleteConfirmation({
         show: false,
         communityId: null,
-        communityName: '',
+        communityName: "",
       });
       fetchCommunities();
     } catch (err) {
       console.error(err);
-      setError('Failed to delete community');
+      setError("Failed to delete community");
     }
   };
 
   return (
-    <div className='community-management'>
+    <div className="community-management">
       <h1>Community Management</h1>
 
-      <div className='action-bar'>
+      <div className="action-bar">
         <button
-          className='btn-primary'
+          className="btn-primary"
           onClick={() => setShowCreateModal(true)}
         >
           Create New Community
         </button>
       </div>
 
-      {error && <div className='alert alert-danger'>{error}</div>}
+      {error && <div className="alert alert-danger">{error}</div>}
 
       {loading ? (
         <p>Loading communities...</p>
       ) : (
-        <table className='data-table'>
+        <table className="data-table">
           <thead>
             <tr>
               <th>Name</th>
@@ -502,7 +494,7 @@ function CommunityManagement() {
             </tr>
           </thead>
           <tbody>
-            {communities.map(community => (
+            {communities.map((community) => (
               <tr key={community._id}>
                 <td>{community.name}</td>
                 <td>{community.description}</td>
@@ -510,7 +502,7 @@ function CommunityManagement() {
                 <td>{new Date(community.createdAt).toLocaleDateString()}</td>
                 <td>
                   <button
-                    className='btn-danger'
+                    className="btn-danger"
                     onClick={() => confirmDelete(community._id, community.name)}
                   >
                     Delete
@@ -524,47 +516,47 @@ function CommunityManagement() {
 
       {/* Create Community Modal */}
       {showCreateModal && (
-        <div className='modal-overlay'>
-          <div className='modal'>
+        <div className="modal-overlay">
+          <div className="modal">
             <h2>Create New Community</h2>
             <form onSubmit={handleCreateCommunity}>
-              <div className='form-group'>
-                <label htmlFor='name'>Community Name</label>
+              <div className="form-group">
+                <label htmlFor="name">Community Name</label>
                 <input
-                  type='text'
-                  id='name'
+                  type="text"
+                  id="name"
                   value={newCommunity.name}
-                  onChange={e =>
+                  onChange={(e) =>
                     setNewCommunity({ ...newCommunity, name: e.target.value })
                   }
                   required
                 />
               </div>
-              <div className='form-group'>
-                <label htmlFor='description'>Description</label>
+              <div className="form-group">
+                <label htmlFor="description">Description</label>
                 <textarea
-                  id='description'
+                  id="description"
                   value={newCommunity.description}
-                  onChange={e =>
+                  onChange={(e) =>
                     setNewCommunity({
                       ...newCommunity,
                       description: e.target.value,
                     })
                   }
-                  rows='4'
-                  style={{ width: '100%' }}
+                  rows="4"
+                  style={{ width: "100%" }}
                   required
                 />
               </div>
-              <div className='modal-actions'>
+              <div className="modal-actions">
                 <button
-                  type='button'
-                  className='btn-secondary'
+                  type="button"
+                  className="btn-secondary"
                   onClick={() => setShowCreateModal(false)}
                 >
                   Cancel
                 </button>
-                <button type='submit' className='btn-primary'>
+                <button type="submit" className="btn-primary">
                   Create
                 </button>
               </div>
@@ -575,28 +567,28 @@ function CommunityManagement() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmation.show && (
-        <div className='modal-overlay'>
-          <div className='modal'>
+        <div className="modal-overlay">
+          <div className="modal">
             <h2>Confirm Deletion</h2>
             <p>
               Are you sure you want to delete the community "
               {deleteConfirmation.communityName}"?
             </p>
-            <p className='warning'>This action cannot be undone!</p>
-            <div className='modal-actions'>
+            <p className="warning">This action cannot be undone!</p>
+            <div className="modal-actions">
               <button
-                className='btn-secondary'
+                className="btn-secondary"
                 onClick={() =>
                   setDeleteConfirmation({
                     show: false,
                     communityId: null,
-                    communityName: '',
+                    communityName: "",
                   })
                 }
               >
                 Cancel
               </button>
-              <button className='btn-danger' onClick={handleDeleteCommunity}>
+              <button className="btn-danger" onClick={handleDeleteCommunity}>
                 Delete
               </button>
             </div>
@@ -610,21 +602,21 @@ function CommunityManagement() {
 function PostManagement() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     show: false,
     postId: null,
-    postTitle: '',
+    postTitle: "",
   });
 
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const res = await apiCall('GET', '/posts');
+      const res = await apiCall("GET", "/posts");
       setPosts(res.data.documents);
     } catch (err) {
       console.error(err);
-      setError('Failed to load posts');
+      setError("Failed to load posts");
     } finally {
       setLoading(false);
     }
@@ -640,29 +632,29 @@ function PostManagement() {
 
   const handleDeletePost = async () => {
     try {
-      await apiCall('DELETE', `/posts/${deleteConfirmation.postId}`);
+      await apiCall("DELETE", `/posts/${deleteConfirmation.postId}`);
       setDeleteConfirmation({
         show: false,
         postId: null,
-        postTitle: '',
+        postTitle: "",
       });
       fetchPosts();
     } catch (err) {
       console.error(err);
-      setError('Failed to delete post');
+      setError("Failed to delete post");
     }
   };
 
   return (
-    <div className='post-management'>
+    <div className="post-management">
       <h1>Post Management</h1>
 
-      {error && <div className='alert alert-danger'>{error}</div>}
+      {error && <div className="alert alert-danger">{error}</div>}
 
       {loading ? (
         <p>Loading posts...</p>
       ) : (
-        <table className='data-table'>
+        <table className="data-table">
           <thead>
             <tr>
               <th>Title</th>
@@ -674,18 +666,18 @@ function PostManagement() {
             </tr>
           </thead>
           <tbody>
-            {posts.map(post => (
+            {posts.map((post) => (
               <tr key={post._id}>
-                <td>{post.title || 'N/A'}</td>
-                <td>{post.creator?.username || 'Anonymous'}</td>
-                <td>{post.community?.name || 'Unknown'}</td>
+                <td>{post.title || "N/A"}</td>
+                <td>{post.creator?.username || "Anonymous"}</td>
+                <td>{post.community?.name || "Unknown"}</td>
                 <td>
                   {post.upvotes || 0} / {post.downvotes || 0}
                 </td>
                 <td>{new Date(post.createdAt).toLocaleDateString()}</td>
                 <td>
                   <button
-                    className='btn-danger'
+                    className="btn-danger"
                     onClick={() => confirmDelete(post._id, post.title)}
                   >
                     Delete
@@ -699,28 +691,28 @@ function PostManagement() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmation.show && (
-        <div className='modal-overlay'>
-          <div className='modal'>
+        <div className="modal-overlay">
+          <div className="modal">
             <h2>Confirm Deletion</h2>
             <p>
               Are you sure you want to delete the post "
               {deleteConfirmation.postTitle}"?
             </p>
-            <p className='warning'>This action cannot be undone!</p>
-            <div className='modal-actions'>
+            <p className="warning">This action cannot be undone!</p>
+            <div className="modal-actions">
               <button
-                className='btn-secondary'
+                className="btn-secondary"
                 onClick={() =>
                   setDeleteConfirmation({
                     show: false,
                     postId: null,
-                    postTitle: '',
+                    postTitle: "",
                   })
                 }
               >
                 Cancel
               </button>
-              <button className='btn-danger' onClick={handleDeletePost}>
+              <button className="btn-danger" onClick={handleDeletePost}>
                 Delete
               </button>
             </div>
@@ -734,21 +726,21 @@ function PostManagement() {
 function CommentManagement() {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     show: false,
     commentId: null,
-    commentContent: '',
+    commentContent: "",
   });
 
   const fetchComments = async () => {
     try {
       setLoading(true);
-      const res = await apiCall('GET', '/comments');
+      const res = await apiCall("GET", "/comments");
       setComments(res.data.documents);
     } catch (err) {
       console.error(err);
-      setError('Failed to load comments');
+      setError("Failed to load comments");
     } finally {
       setLoading(false);
     }
@@ -774,29 +766,29 @@ function CommentManagement() {
 
   const handleDeleteComment = async () => {
     try {
-      await apiCall('DELETE', `/comments/${deleteConfirmation.commentId}`);
+      await apiCall("DELETE", `/comments/${deleteConfirmation.commentId}`);
       setDeleteConfirmation({
         show: false,
         commentId: null,
-        commentContent: '',
+        commentContent: "",
       });
       fetchComments();
     } catch (err) {
       console.error(err);
-      setError('Failed to delete comment');
+      setError("Failed to delete comment");
     }
   };
 
   return (
-    <div className='comment-management'>
+    <div className="comment-management">
       <h1>Comment Management</h1>
 
-      {error && <div className='alert alert-danger'>{error}</div>}
+      {error && <div className="alert alert-danger">{error}</div>}
 
       {loading ? (
         <p>Loading comments...</p>
       ) : (
-        <table className='data-table'>
+        <table className="data-table">
           <thead>
             <tr>
               <th>Content</th>
@@ -809,19 +801,19 @@ function CommentManagement() {
             </tr>
           </thead>
           <tbody>
-            {comments.map(comment => (
+            {comments.map((comment) => (
               <tr key={comment._id}>
-                <td className='comment-content'>
+                <td className="comment-content">
                   {comment.content.length > 100
                     ? `${comment.content.substring(0, 100)}...`
                     : comment.content}
                 </td>
-                <td>{comment.creator?.username || 'Anonymous'}</td>
-                <td>{comment.parent?.title || 'Unknown'}</td>
+                <td>{comment.creator?.username || "Anonymous"}</td>
+                <td>{comment.parent?.title || "Unknown"}</td>
                 <td>
                   {comment.community?.name ||
                     comment.parent?.community?.name ||
-                    'Unknown'}
+                    "Unknown"}
                 </td>
                 <td>
                   {comment.upvotes || 0} / {comment.downvotes || 0}
@@ -829,7 +821,7 @@ function CommentManagement() {
                 <td>{new Date(comment.createdAt).toLocaleDateString()}</td>
                 <td>
                   <button
-                    className='btn-danger'
+                    className="btn-danger"
                     onClick={() => confirmDelete(comment._id, comment.content)}
                   >
                     Delete
@@ -843,28 +835,28 @@ function CommentManagement() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmation.show && (
-        <div className='modal-overlay'>
-          <div className='modal'>
+        <div className="modal-overlay">
+          <div className="modal">
             <h2>Confirm Deletion</h2>
             <p>
               Are you sure you want to delete the comment "
               {deleteConfirmation.commentContent}"?
             </p>
-            <p className='warning'>This action cannot be undone!</p>
-            <div className='modal-actions'>
+            <p className="warning">This action cannot be undone!</p>
+            <div className="modal-actions">
               <button
-                className='btn-secondary'
+                className="btn-secondary"
                 onClick={() =>
                   setDeleteConfirmation({
                     show: false,
                     commentId: null,
-                    commentContent: '',
+                    commentContent: "",
                   })
                 }
               >
                 Cancel
               </button>
-              <button className='btn-danger' onClick={handleDeleteComment}>
+              <button className="btn-danger" onClick={handleDeleteComment}>
                 Delete
               </button>
             </div>
@@ -874,7 +866,5 @@ function CommentManagement() {
     </div>
   );
 }
-
-
 
 export default App;
